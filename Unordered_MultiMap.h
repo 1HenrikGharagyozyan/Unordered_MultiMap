@@ -29,7 +29,7 @@ public:
 	Unordered_MultiMap();
 	~Unordered_MultiMap();
 
-	explicit Unordered_MultiMap(size_type& bucket_count, const hasher& hash = hasher(), const key_equal& equal = key_equal());
+	explicit Unordered_MultiMap(size_type bucket_count, const hasher& hash = hasher(), const key_equal& equal = key_equal());
 
 	template<typename InputIt>
 	Unordered_MultiMap(InputIt first, InputIt last,
@@ -53,7 +53,7 @@ public:
 	const_iterator cend() const noexcept;
 
 	[[nodiscard]] bool empty() const noexcept;
-	size_type size() const noexcept;
+	[[nodiscard]] size_type size() const noexcept;
 
 	void clear() noexcept;
 
@@ -64,6 +64,9 @@ public:
 	void insert(InputIt first, InputIt last);
 
 	void insert(std::initializer_list<value_type> ilist);
+
+	template<typename... Args>
+	iterator emplace(Args&&... args);
 
 	size_type erase(const key_type& key);
 
@@ -77,7 +80,7 @@ public:
 	iterator find(const key_type& key);
 	const_iterator find(const key_type& key) const;
 
-	size_type bucket_count() const noexcept;
+	[[nodiscard]] size_type bucket_count() const noexcept;
 	size_type bucket_size(size_type index) const;
 	size_type bucket(const key_type& key) const;
 
@@ -99,8 +102,8 @@ template<typename Key, typename T, typename Hash, typename KeyEqual>
 inline Unordered_MultiMap<Key, T, Hash, KeyEqual>::~Unordered_MultiMap() = default;
 
 template<typename Key, typename T, typename Hash, typename KeyEqual>
-inline Unordered_MultiMap<Key, T, Hash, KeyEqual>::Unordered_MultiMap(size_type& bucket_count, 
-	const hasher& hash, const key_equal& equal)
+inline Unordered_MultiMap<Key, T, Hash, KeyEqual>::Unordered_MultiMap(
+		size_type bucket_count, const hasher& hash, const key_equal& equal)
 	: _table(bucket_count, hash, equal)
 {
 }
@@ -140,8 +143,9 @@ template<typename Key, typename T, typename Hash, typename KeyEqual>
 Unordered_MultiMap<Key, T, Hash, KeyEqual>& 
 		Unordered_MultiMap<Key, T, Hash, KeyEqual>::operator=(std::initializer_list<value_type> ilist)
 {
-	for (const auto& elem : ilist)
-		_table.insert(elem);
+	clear();
+	insert(ilist.begin(), ilist.end());
+	return *this;
 }
 
 template<typename Key, typename T, typename Hash, typename KeyEqual>
@@ -223,6 +227,13 @@ template<typename Key, typename T, typename Hash, typename KeyEqual>
 void Unordered_MultiMap<Key, T, Hash, KeyEqual>::insert(std::initializer_list<value_type> ilist)
 {
 	insert(ilist.begin(), ilist.end());
+}
+
+template<typename Key, typename T, typename Hash, typename KeyEqual>
+template<typename... Args>
+typename Unordered_MultiMap<Key, T, Hash, KeyEqual>::iterator Unordered_MultiMap<Key, T, Hash, KeyEqual>::emplace(Args&&... args)
+{
+	return _table.emplace(std::forward<Args>(args)...);
 }
 
 template<typename Key, typename T, typename Hash, typename KeyEqual>
@@ -314,7 +325,7 @@ void Unordered_MultiMap<Key, T, Hash, KeyEqual>::max_load_factor(float ml)
 template<typename Key, typename T, typename Hash, typename KeyEqual>
 void Unordered_MultiMap<Key, T, Hash, KeyEqual>::rehash(size_type count)
 {
-	_table.reserve(count);
+	_table.rehash(count);
 }
 
 template<typename Key, typename T, typename Hash, typename KeyEqual>
